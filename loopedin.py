@@ -264,7 +264,6 @@ class Person:
 
     
 class Spider:
-
     def __init__(self, url, parsedorders, engine):
         self.engine = engine
         self.qdppl = queue.Queue()
@@ -278,6 +277,8 @@ class Spider:
             self.loadlastqueue()
         if self.qdppl.empty() and self.parsedorders.uselastscrape:
             Help().emptylistgiven()
+        
+        # print("RUNNING RECURSE") for debugging json not populating/parsing
         self.recurse()
          
     def recurse(self):
@@ -292,6 +293,8 @@ class Spider:
 
                 self.tally += 1
 
+                # RUNNING RAMBLING CLASS
+                # print("RUNNING RAMBLING CLASS")
                 Rambling(person, self.tally, self.parsedorders, self.stopat, self.qdppl, self.engine)
 
                 for new_url in person.related_ppl:  
@@ -686,7 +689,7 @@ class Help():
     def envsetup(self):
         clear()
         print("""
-    \033[1;31mWARNING\033[0m: .env incomplete!
+            \033[1;31mWARNING\033[0m: .env incomplete!
         """)
 
         choice = None
@@ -702,13 +705,19 @@ class Help():
             
             auth_token = input("enter your turso auth token (to be stored locally, enter to skip): ").strip()
             clear()
+
             linkedin_email = input("enter your linkedin email:")
             clear()
+            
             linkedin_password = input("enter your linkedin password:")
             clear()
+
+            chromium_binary_path = input("enter your chromium executable path:")
+            clear()
+
             print("""
-        \033[1;31mWARNING\033[0m: 
-        """)
+                \033[1;31mWARNING\033[0m: 
+            """)
 
             choice = None
             choice = input(f"\n        press enter to attempt auto login, or type 'QUIT' to exit(login credentials will \033[1;31mnot\033[0m be saved): ")
@@ -721,8 +730,8 @@ class Help():
                     f.write(f"TURSO_DB_URL={db_url}\n")
                     f.write(f"TURSO_AUTH_TOKEN={auth_token}\n")
                     f.write(f"LINKEDIN_EMAIL={linkedin_email}\n")
-                    f.write(f"LINKEDIN_PASSWORD={linkedin_password}")
-                    self.linkedin_login(driver, linkedin_email, linkedin_password)
+                    f.write(f"LINKEDIN_PASSWORD={linkedin_password}\n")
+                    f.write(f"CHROMIUM_BINARY={chromium_binary_path}\n")
         else:
             clear()
             print_art()
@@ -734,6 +743,12 @@ class Help():
         time.sleep(5)
         driver.find_element(By.ID, "username").send_keys(email)
         driver.find_element(By.ID, "password").send_keys(password)
+
+        # Uncheck "Remember me" if it is selected
+        remember_checkbox = driver.find_element(By.ID, "rememberMeOptIn-checkbox")
+        if remember_checkbox.is_selected():
+            driver.execute_script("arguments[0].checked = false;", remember_checkbox)
+        
         driver.find_element(By.XPATH, "//button[@type='submit']").click()
         time.sleep(5)
         if is_logged_in(driver):
@@ -763,18 +778,15 @@ class Help():
             print_art()
             main()
 
-
-def main():
+def configure_chromium(path):
     global engine
+    global driver
     engine = None
 
-    global driver
-    
     chromedriver_path = shutil.which("chromedriver")
 
     options = Options()
-    options.add_experimental_option("detach", True)
-    
+    # options.add_experimental_option("detach", True)
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
@@ -783,38 +795,54 @@ def main():
     options.add_argument('--disable-dev-shm-usage')
     options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
 
-
-    #   GONNA HAVE TO MAKE SURE THIS IS A PER OS THING, FIX THIS
-    options.binary_location = "/usr/bin/chromium"
-
-   
-
-    global driver
+    options.binary_location = path
 
     service = Service(executable_path = chromedriver_path)
 
-    driver = webdriver.Chrome(service = service, options=options)
+    driver = webdriver.Chrome(service=service, options=options)
     #   driver = webdriver.Chrome(service=Service(), options=options)
+
+def main():
+    global driver
 
     if not Path(".env").exists():
         print(f"welcome! make sure you're logged in, then enter url and flags to get started: (-h or --help for info and -s or --setup for .env setup(\033[1;36mrecommended\033[0m))")
     else:
         print(f"welcome! make sure you're logged in, then enter url and flags to get started: (-h or --help for info)")
+
     orders = input("")
+    
     global parsedorders
     parsedorders = Flags(orders)
     clear()
     #   print("DEBUG checklist url:", parsedorders.url)
+
+    # try load env
     load_dotenv()
 
-    EMAIL = os.getenv("LINKEDIN_EMAIL")
-    PASSWORD = os.getenv("LINKEDIN_PASSWORD")
-    
-    if not EMAIL or not PASSWORD:
+    #   GONNA HAVE TO MAKE SURE THIS IS A PER OS THING, FIX THIS
+    # try to get the chromium driver from env
+    chromium_bin_path = os.getenv("CHROMIUM_BINARY")
+    email = os.getenv("LINKEDIN_EMAIL")
+    passwd = os.getenv("LINKEDIN_PASSWORD")
+
+    # CHECKING IMPORTANT ENV VARS
+    if not email or not passwd or not chromium_bin_path:
         Help().envsetup()
+        
+        # reload env
+        load_dotenv()
+        chromium_bin_path = os.getenv("CHROMIUM_BINARY")
+        print(f"GOT PATH {chromium_bin_path}")
+        email = os.getenv("LINKEDIN_EMAIL")
+        print(f"GOT EMAIL {email}")
+        passwd = os.getenv("LINKEDIN_PASSWORD")
+
+    print("CONFIGURING CHROMIUM")
+    configure_chromium(chromium_bin_path) # start global driver var
 
     if not is_logged_in(driver):
-        Help().linkedin_login(driver, EMAIL, PASSWORD)
+        Help().linkedin_login(driver, email, passwd)
 
     checklist()
 
