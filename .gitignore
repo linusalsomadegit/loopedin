@@ -1,2 +1,4 @@
 .env
 chrome
+__pycache__/
+*.py[cod]
