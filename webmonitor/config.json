@@ -1,0 +1,32 @@
+{
+    "websites": [
+        {
+            "name": "Vorne Industries",
+            "url": "https://www.vorne.com/",
+            "ignoreList": [
+
+            ]
+        },
+        {
+            "name": "Jim Sulzer",
+            "url": "https://sulzerconsulting.com/index.html",
+            "ignoreList": [
+
+            ]
+        },
+        {
+            "name": "OEE Alert",
+            "url": "https://oeealert.com/index.html",
+            "ignoreList": [
+
+            ]
+        },
+        {
+            "name": "OEE Studio",
+            "url": "https://oeestudio.com/",
+            "ignoreList": [
+
+            ]
+        }
+    ]
+}
