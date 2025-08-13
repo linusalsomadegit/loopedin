@@ -18,8 +18,9 @@ class _Config:
         if not os.path.exists(self.filename):
             return None
 
-        with open(self.filename, "r", encoding="utf-8") as f:
-            self.data = json.load(f)
+        if (not self.data):
+            with open(self.filename, "r", encoding="utf-8") as f:
+                self.data = json.load(f)
 
         # Return the websites list as a tuple for further processing
         return self.data.get("websites", [])
